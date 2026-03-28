@@ -98,6 +98,6 @@ app.post("/delete-chat", (req, res) => {
   res.json({ status: "deleted" });
 });
 
-app.listen(3000, () => {
-  console.log("Servidor escuchando en http://localhost:3000");
+app.get("/", (req, res) => {
+  res.send("IA funcionando correctamente 🚀");
 });
