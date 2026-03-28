@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+    }
+
+    /* Botón circular flotante */
+    #chat-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4a90e2, #9b59b6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: fixed;
+      bottom: 50px;
+      right: 50px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1001;
+      transition: all 0.3s ease;
+    }
+
+    #chat-circle:hover { transform: scale(1.1); }
+    #chat-circle::before {
+      content: "E";
+      font-size: 36px;
+      color: white;
+      font-weight: bold;
+      transition: font-size 0.3s ease;
+    }
+    #chat-circle.abierto { width: 40px; height: 40px; }
+    #chat-circle.abierto::before { font-size: 18px; }
+
+    /* Banner */
+    #chat-container {
+      position: fixed;
+      bottom: 100px; 
+      right: 50px;
+      width: 750px;
+      height: 75vh;
+      display: flex;
+      flex-direction: row;
+      padding: 0;
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      opacity: 0;
+      transform: scale(0);
+      transform-origin: bottom right;
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1000;
+      box-sizing: border-box;
+    }
+    #chat-container.abierto {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1); 
+    }
+    #chat-container.abierto::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      padding: 5px; 
+      border-radius: 20px; 
+      background: linear-gradient(135deg, #4a90e2, #9b59b6);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Barra lateral */
+    #sidebar {
+      width: 200px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f0f0f0;
+      padding: 10px;
+      overflow-y: auto;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    #sidebar.hidden { margin-left: -200px; }
+
+    #sidebar h3 { margin: 0 0 10px 0; font-size: 14px; text-align: center; }
+    #sidebar button { margin-bottom: 5px; cursor: pointer; }
+
+    .chat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #e8e8e8;
+      margin-bottom: 5px;
+      padding: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .chat-item:hover { background: #dcdcdc; }
+
+    .delete-btn {
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 0 5px;
+    }
+
+    /* Pestañita fuera del banner */
+    #toggle-sidebar {
+      position: absolute;
+      top: 20px;
+      left: 100%; /* sobresale fuera del banner */
+      width: 20px;
+      height: 50px;
+      background: linear-gradient(135deg, #4a90e2, #9b59b6);
+      border-radius: 5px 0 0 5px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      z-index: 1002;
+    }
+
+    /* Chat principal */
+    #chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    #chat-content {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 5px;
+      margin-bottom: 10px;
+    }
+
+    #input-container {
+      display: flex;
+      flex-shrink: 0;
+    }
+    #input-container input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      margin-right: 5px;
+    }
+    #input-container button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #4a90e2, #9b59b6);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Modal eliminar */
+    #delete-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 2000;
+      width: 250px;
+      text-align: center;
+    }
+    #delete-modal h2 { margin:0 0 10px 0; font-weight: bold; }
+    #delete-modal p { margin:0 0 15px 0; font-size: 14px; }
+    #delete-modal button { margin-right:10px; padding:5px 10px; border-radius:5px; cursor:pointer; }
+    #delete-modal .confirm { background:red; color:white; border:none; }
+  </style>
+</head>
+<body>
+
+<div id="chat-circle" onclick="toggleChat()"></div>
+
+<div id="chat-container">
+  <div id="sidebar">
+    <h3>Chats</h3>
+    <button onclick="crearNuevoChat()">Nuevo Chat</button>
+    <div id="chat-list"></div>
+    <div id="toggle-sidebar" onclick="toggleSidebar()">≡</div>
+  </div>
+  <div id="chat-main">
+    <div id="chat-content"></div>
+    <div id="input-container">
+      <input id="input" placeholder="Escribe algo..." onkeydown="if(event.key==='Enter'){enviar()}" />
+      <button onclick="enviar()">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal eliminar -->
+<div id="delete-modal">
+  <h2>ELIMINAR CHAT</h2>
+  <p>Desea eliminar este chat?</p>
+  <button onclick="cancelDelete()">Cancelar</button>
+  <button class="confirm" onclick="confirmDelete()">ELIMINAR</button>
+</div>
+
+<script>
+let activeChatId = null;
+let chats = [];
+let chatToDelete = null;
+
+async function toggleChat() {
+  const container = document.getElementById('chat-container');
+  const circle = document.getElementById('chat-circle');
+  const abierto = container.classList.toggle('abierto');
+  circle.classList.toggle('abierto');
+
+  if (abierto && !activeChatId) {
+    await crearNuevoChat();
+  }
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  sidebar.classList.toggle("hidden");
+}
+
+async function crearNuevoChat() {
+  if(chats.length>=10) chats.shift(); // Limite 10 chats
+  const res = await fetch("https://mi-ia-estudio.onrender.com/new-chat", { method:"POST" });
+  const data = await res.json();
+  activeChatId = data.chatId;
+  document.getElementById("chat-content").innerHTML = "";
+  chats.push({id: activeChatId, title:"Nuevo chat", messages:[]});
+  actualizarSidebar();
+}
+
+function actualizarSidebar() {
+  const chatList = document.getElementById("chat-list");
+  chatList.innerHTML = "";
+  chats.forEach(chat => {
+    const div = document.createElement("div");
+    div.className = "chat-item";
+    const title = document.createElement("span");
+    title.textContent = chat.title;
+    title.style.flex="1";
+    title.onclick = ()=> switchChat(chat.id);
+    const del = document.createElement("button");
+    del.textContent="X";
+    del.className="delete-btn";
+    del.onclick=(e)=>{ e.stopPropagation(); showDeleteModal(chat.id); };
+    div.appendChild(title);
+    div.appendChild(del);
+    chatList.appendChild(div);
+  });
+}
+
+function showDeleteModal(chatId) {
+  chatToDelete = chatId;
+  document.getElementById("delete-modal").style.display="block";
+}
+
+function cancelDelete() {
+  chatToDelete=null;
+  document.getElementById("delete-modal").style.display="none";
+}
+
+async function confirmDelete() {
+  await fetch("https://mi-ia-estudio.onrender.com/delete-chat", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({chatId:chatToDelete})
+  });
+  chats = chats.filter(c=>c.id!==chatToDelete);
+  if(activeChatId===chatToDelete) activeChatId=null;
+  actualizarSidebar();
+  cancelDelete();
+}
+
+async function switchChat(chatId) {
+  activeChatId=chatId;
+  const res = await fetch("https://mi-ia-estudio.onrender.com/switch-chat", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({chatId})
+  });
+  const data = await res.json();
+  const chatContent = document.getElementById("chat-content");
+  chatContent.innerHTML="";
+  data.messages.forEach(msg=>{
+    const p=document.createElement("p");
+    p.innerHTML=(msg.role==="user"?"Tú: ":"IA: ")+marked.parse(msg.content);
+    chatContent.prepend(p);
+  });
+}
+
+async function enviar() {
+  const mensaje = document.getElementById("input").value;
+  if(!mensaje || !activeChatId) return;
+  const chatContent=document.getElementById("chat-content");
+  const userMsg=document.createElement("p");
+  userMsg.textContent="Tú: "+mensaje;
+  chatContent.prepend(userMsg);
+
+  const res = await fetch("https://mi-ia-estudio.onrender.com/chat", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({chatId: activeChatId, message: mensaje})
+  });
+  const data = await res.json();
+  const iaMsg=document.createElement("p");
+  iaMsg.innerHTML="<b>IA:</b><br>"+marked.parse(data.reply);
+  chatContent.prepend(iaMsg);
+
+  // Guardar localmente
+  const chat=chats.find(c=>c.id===activeChatId);
+  chat.messages.push({role:"user", content:mensaje});
+  chat.messages.push({role:"assistant", content:data.reply});
+  document.getElementById("input").value="";
+}
+</script>
+
+</body>
+</html>
