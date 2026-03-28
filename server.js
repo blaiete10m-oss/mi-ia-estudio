@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
@@ -7,34 +6,28 @@ import { v4 as uuidv4 } from "uuid";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Configuración de entorno
 dotenv.config();
 
-// Configuración de __dirname para ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Crear la app de Express
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Servir archivos estáticos desde la carpeta "mi-ia-estudio"
-app.use(express.static(path.join(__dirname, "mi-ia-estudio")));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Cliente de OpenAI (Groq)
+// Servir archivos estáticos desde la raíz del repo
+app.use(express.static(path.join(__dirname)));
+
+// Configuración de OpenAI
 const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
   baseURL: "https://api.groq.com/openai/v1"
 });
 
-// Chats activos en memoria
+// Chats activos en memoria mientras el banner está abierto
 let activeChats = {};
-
 // Chats guardados (persisten aunque cierres el banner)
 let savedChats = [];
-
-// ================== RUTAS DE CHAT ==================
 
 // Crear nuevo chat
 app.post("/new-chat", (req, res) => {
@@ -47,20 +40,17 @@ app.post("/new-chat", (req, res) => {
 app.post("/chat", async (req, res) => {
   try {
     const { message, chatId } = req.body;
-    if (!chatId || !activeChats[chatId]) return res.status(400).json({ reply: "Chat no activo" });
+    if (!chatId || !activeChats[chatId])
+      return res.status(400).json({ reply: "Chat no activo" });
 
-    // Guardar mensaje del usuario
     activeChats[chatId].push({ role: "user", content: message });
 
-    // Enviar historial al modelo
     const response = await client.chat.completions.create({
       model: "groq/compound",
       messages: activeChats[chatId]
     });
 
     const iaReply = response.choices[0].message.content;
-
-    // Guardar respuesta
     activeChats[chatId].push({ role: "assistant", content: iaReply });
 
     res.json({ reply: iaReply });
@@ -73,18 +63,17 @@ app.post("/chat", async (req, res) => {
 // Cerrar chat (guardar en lista de chats)
 app.post("/close-chat", (req, res) => {
   const { chatId } = req.body;
-  if (!chatId || !activeChats[chatId]) return res.status(400).send("Chat no activo");
+  if (!chatId || !activeChats[chatId])
+    return res.status(400).send("Chat no activo");
 
   const firstMsg = activeChats[chatId][0]?.content || "Nuevo Chat";
   const title = firstMsg.length > 20 ? firstMsg.slice(0, 20) + "..." : firstMsg;
 
   savedChats.push({ id: chatId, title, messages: activeChats[chatId] });
 
-  // Limitar a 10 chats guardados
-  if (savedChats.length > 10) savedChats = savedChats.slice(savedChats.length - 10);
+  if (savedChats.length > 10) savedChats = savedChats.slice(-10);
 
   delete activeChats[chatId];
-
   res.json({ status: "ok" });
 });
 
@@ -109,13 +98,11 @@ app.post("/delete-chat", (req, res) => {
   res.json({ status: "deleted" });
 });
 
-// ================== RUTA PRINCIPAL ==================
-// Servir el index.html de "mi-ia-estudio"
+// Enviar el index.html desde la raíz
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "mi-ia-estudio/index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Puerto
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
