@@ -3,6 +3,14 @@ import cors from "cors";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Servir archivos estáticos desde la carpeta public
+app.use(express.static(path.join(__dirname, "mi-ia-estudio")));
 
 dotenv.config();
 
