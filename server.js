@@ -112,6 +112,6 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
