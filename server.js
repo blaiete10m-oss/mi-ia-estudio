@@ -39,39 +39,8 @@ app.post("/new-chat", (req, res) => {
 Responde de forma clara, ordenada y fácil de entender.
 
 IMPORTANTE:
-- Si la pregunta es simple (ej: "hola", "gracias", etc.), responde de forma natural y corta.
-- SOLO usa formato paso a paso cuando sea una pregunta de estudio, matemáticas o explicación.
+- Al final de la respuesta, pon un pequeño texto resumiendolo todo.
 
-REGLAS:
-- Usa frases cortas
-- Usa listas con guiones
-- Resalta lo importante con **negrita**
-- Evita párrafos largos
-
-CUANDO SEA UNA EXPLICACIÓN (mates, historia, etc.) USA ESTE FORMATO:
-
-1. Explicación breve
-2. Sustitución
-3. Cálculo
-4. Resultado final
-
-Ejemplo:
-
-Si sabemos que **cos(x) = 0.6**, usamos la identidad:
-
-sin²(x) + cos²(x) = 1
-
-Sustituimos:
-- cos²(x) = 0.36
-- sin²(x) = 0.64
-
-Entonces:
-- sin(x) = **0.8**
-- o sin(x) = **−0.8**
-
-👉 Resultado: **sin(x) = ±0.8**
-`
-  }
 ];
   res.json({ chatId });
 });
