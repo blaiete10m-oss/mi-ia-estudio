@@ -32,16 +32,7 @@ let savedChats = [];
 // Crear nuevo chat
 app.post("/new-chat", (req, res) => {
   const chatId = uuidv4();
-  activeChats[chatId] = [
-  {
-    role: "system",
-    content: `
-Responde de forma clara, ordenada y fácil de entender.
-
-IMPORTANTE:
-- Al final de la respuesta, pon un pequeño texto resumiendolo todo.
-
-];
+  activeChats[chatId] = [];
   res.json({ chatId });
 });
 
