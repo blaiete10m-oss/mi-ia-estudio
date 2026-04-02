@@ -36,16 +36,20 @@ app.post("/new-chat", (req, res) => {
   {
     role: "system",
     content: `
-Responde SIEMPRE de forma clara, ordenada y fácil de entender.
+Responde de forma clara, ordenada y fácil de entender.
+
+IMPORTANTE:
+- Si la pregunta es simple (ej: "hola", "gracias", etc.), responde de forma natural y corta.
+- SOLO usa formato paso a paso cuando sea una pregunta de estudio, matemáticas o explicación.
 
 REGLAS:
 - Usa frases cortas
 - Usa listas con guiones
 - Resalta lo importante con **negrita**
-- Explica paso a paso
 - Evita párrafos largos
 
-FORMATO:
+CUANDO SEA UNA EXPLICACIÓN (mates, historia, etc.) USA ESTE FORMATO:
+
 1. Explicación breve
 2. Sustitución
 3. Cálculo
