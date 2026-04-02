@@ -32,7 +32,43 @@ let savedChats = [];
 // Crear nuevo chat
 app.post("/new-chat", (req, res) => {
   const chatId = uuidv4();
-  activeChats[chatId] = [];
+  activeChats[chatId] = [
+  {
+    role: "system",
+    content: `
+Responde SIEMPRE de forma clara, ordenada y fácil de entender.
+
+REGLAS:
+- Usa frases cortas
+- Usa listas con guiones
+- Resalta lo importante con **negrita**
+- Explica paso a paso
+- Evita párrafos largos
+
+FORMATO:
+1. Explicación breve
+2. Sustitución
+3. Cálculo
+4. Resultado final
+
+Ejemplo:
+
+Si sabemos que **cos(x) = 0.6**, usamos la identidad:
+
+sin²(x) + cos²(x) = 1
+
+Sustituimos:
+- cos²(x) = 0.36
+- sin²(x) = 0.64
+
+Entonces:
+- sin(x) = **0.8**
+- o sin(x) = **−0.8**
+
+👉 Resultado: **sin(x) = ±0.8**
+`
+  }
+];
   res.json({ chatId });
 });
 
