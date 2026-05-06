@@ -44,22 +44,34 @@ function buildMessages(history) {
   ];
 }
 
-async function generateTitle(firstUserMessage) {
+// Genera título tras acumular ~6 mensajes (3 turnos usuario+IA).
+// Se llama una sola vez: cuando el historial llega a exactamente 6 mensajes.
+// Si el chat tiene menos de 6 mensajes (por ej. al guardar antes), usa los que haya.
+async function generateTitle(messages) {
   try {
+    // Construir resumen del intercambio para el prompt
+    const excerpt = messages
+      .slice(0, 6)
+      .map(m => `${m.role === "user" ? "Usuario" : "IA"}: ${m.content.slice(0, 200)}`)
+      .join("\n");
+
     const resp = await client.chat.completions.create({
       model: MODEL,
       max_tokens: 20,
       messages: [
         {
           role: "system",
-          content: "Resume el siguiente mensaje en 4-6 palabras como título de conversación. Sin comillas ni puntuación final.",
+          content:
+            "Basándote en la siguiente conversación, genera un título breve de 4-6 palabras que describa el tema principal. Sin comillas, sin puntuación final, solo el título.",
         },
-        { role: "user", content: firstUserMessage },
+        { role: "user", content: excerpt },
       ],
     });
     return resp.choices[0].message.content.trim();
   } catch {
-    return firstUserMessage.slice(0, 30) + (firstUserMessage.length > 30 ? "…" : "");
+    // Fallback: primeras palabras del primer mensaje del usuario
+    const first = messages.find(m => m.role === "user")?.content || "Nuevo chat";
+    return first.slice(0, 30) + (first.length > 30 ? "…" : "");
   }
 }
 
@@ -89,10 +101,6 @@ app.post("/chat", async (req, res) => {
   chat.messages.push({ role: "user", content: message.trim() });
   chat.lastActivity = new Date().toISOString();
 
-  if (chat.messages.length === 1) {
-    chat.title = await generateTitle(message.trim());
-  }
-
   try {
     if (stream) {
       res.setHeader("Content-Type", "text/event-stream");
@@ -118,6 +126,12 @@ app.post("/chat", async (req, res) => {
 
       chat.messages.push({ role: "assistant", content: fullReply });
       chat.lastActivity = new Date().toISOString();
+
+      // Generar título tras el 6º mensaje (3 turnos completos usuario+IA)
+      if (chat.messages.length === 6) {
+        chat.title = await generateTitle(chat.messages);
+      }
+
       res.write(`data: ${JSON.stringify({ done: true, title: chat.title })}\n\n`);
       res.end();
 
@@ -132,6 +146,11 @@ app.post("/chat", async (req, res) => {
       const iaReply = response.choices[0].message.content;
       chat.messages.push({ role: "assistant", content: iaReply });
       chat.lastActivity = new Date().toISOString();
+
+      // Generar título tras el 6º mensaje (3 turnos completos usuario+IA)
+      if (chat.messages.length === 6) {
+        chat.title = await generateTitle(chat.messages);
+      }
 
       res.json({ reply: iaReply, title: chat.title, usage: response.usage });
     }
@@ -153,6 +172,12 @@ app.post("/close-chat", (req, res) => {
     return res.status(404).json({ error: "Chat no activo" });
 
   const chat = activeChats[chatId];
+
+  // Si nunca se generó título (chat corto, menos de 6 mensajes), generarlo ahora
+  if (chat.title === "Nuevo chat" && chat.messages.length >= 2) {
+    chat.title = await generateTitle(chat.messages);
+  }
+
   const existing = savedChats.findIndex(c => c.id === chatId);
   const entry = {
     id:        chatId,
