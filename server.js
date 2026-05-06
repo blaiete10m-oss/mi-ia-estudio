@@ -166,7 +166,7 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-app.post("/close-chat", (req, res) => {
+app.post("/close-chat", async (req, res) => {
   const { chatId } = req.body;
   if (!chatId || !activeChats[chatId])
     return res.status(404).json({ error: "Chat no activo" });
